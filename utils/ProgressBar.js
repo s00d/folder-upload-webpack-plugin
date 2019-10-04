@@ -3,8 +3,11 @@ const slog = require('single-line-log').stdout;
 module.exports = function ProgressBar(description, bar_length) {
     this.description = description || 'Progress';
     this.length = bar_length || 25;
+    this.lastcell = -1;
     this.render = function (opts) {
         const cell_num = Math.floor(opts.percent * this.length);
+        if(this.lastcell === cell_num) return;
+        this.lastcell = cell_num;
         let cell = '';
         for (let i = 0; i < cell_num; i++) {
 

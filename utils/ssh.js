@@ -57,7 +57,7 @@ module.exports = class SshClient {
         return await new Promise((resolve, reject) => {
             this.log('Put: '+archive+' to server '+remotePath, chalk.yellow);
             const fileSize = this.getFileSizeInBytes(archive);
-            const pb = new ProgressBar('Sending...', 50);
+            const pb = new ProgressBar('Sending...', 20);
             this.sftp.fastPut(archive, remotePath, {
                 step: step => {
                     const percent = (step / fileSize).toFixed(4);

@@ -13,7 +13,7 @@ module.exports = class Compressor {
 
     async compress(options = {}) {
         const {folder, folderName, archive, compress} = options;
-        const pb = new ProgressBar('Archiving...', 50);
+        const pb = new ProgressBar('Archiving...', 20);
         // const fileSize = this.getFileSizeInBytes(path.resolve(__dirname, archive));
         const output = fs.createWriteStream(path.resolve(__dirname, '../'+archive));
         const arch = archiver('zip', {
