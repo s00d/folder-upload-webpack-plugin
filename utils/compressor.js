@@ -25,10 +25,6 @@ module.exports = class Compressor {
             getSize(folder, (err, size) => {
                 if (err) { throw err; }
                 size = size < 0 ? -Number(size) : Number(size);
-
-                // console.log('dir: ' + folder + ' -' +size + ' bytes');
-                // console.log((size / 1024 / 1024).toFixed(2) + ' MB');
-
                 // handle success
                 output.on('warning', (err) => {
                     if (err.code !== 'ENOENT') {

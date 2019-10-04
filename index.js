@@ -31,11 +31,11 @@ class FolderUploadWebpackPlugin {
     apply(compiler) {
         // for different webpack version
         if (compiler.hooks) {
-            // compiler.hooks.afterEmit.tap('after-emit', this.upload);
-            compiler.hooks.beforeRun.tap('before-run', this.upload);
+            compiler.hooks.afterEmit.tap('after-emit', this.upload);
+            // compiler.hooks.beforeRun.tap('before-run', this.upload);
         } else {
-            // compiler.plugin('after-emit', this.upload);
-            compiler.plugin('before-run', this.upload);
+            compiler.plugin('after-emit', this.upload);
+            // compiler.plugin('before-run', this.upload);
         }
     }
 
