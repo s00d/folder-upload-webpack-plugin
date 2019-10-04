@@ -20,7 +20,7 @@ class FolderUploadWebpackPlugin {
         options.compressor = options.compressor ? new options.compressor(options.logging, options.progress) : new Compressor(options.logging, options.progress);
         options.archive = options.archive ? options.archive : 'FolderUploadWebpackPlugin.zip';
         options.ssh = options.ssh ? new options.ssh(options.logging, options.progress) : new SshClient(options.logging, options.progress);
-        options.unArchive = options.unArchive ? options.unArchive : 'unzip';
+        options.unCompress = options.unCompress ? options.unCompress : 'unzip';
         // options.debug = (debug) => {
         //     console.log(debug)
         // };
@@ -40,7 +40,7 @@ class FolderUploadWebpackPlugin {
     }
 
     async upload(compilation, callback) {
-        const {folder, remotePath, logging, clear, folderName, archive, unArchive, chmod, compress, compressor, ssh, ...others} = this.options;
+        const {folder, remotePath, logging, clear, folderName, archive, unCompress, chmod, compress, compressor, ssh, ...others} = this.options;
         await ssh.connect({...others});
         if(this.options.firstEmit) {
             this.log('archive creation '+folder+'...', chalk.blue);
@@ -66,8 +66,8 @@ class FolderUploadWebpackPlugin {
         this.log('Uploading...', chalk.green);
         await ssh.sendFile(path.resolve(__dirname, archive), formatRemotePath(remotePath, archive));
 
-        this.log('cd ' + remotePath + ' && '+unArchive+' ' + archive, chalk.blue)
-        await ssh.exec('cd ' + formatRemotePath(remotePath, '') + ' && '+unArchive+' ' + archive);
+        this.log('cd ' + remotePath + ' && '+unCompress+' ' + archive, chalk.blue);
+        await ssh.exec('cd ' + formatRemotePath(remotePath, '') + ' && '+unCompress+' ' + archive);
         // await ssh.exec('ln -s '+formatRemotePath(remotePath, '')+' ' + formatRemotePath(remotePath, ''));
         await ssh.chmod(formatRemotePath(remotePath, folderName), chmod);
 
