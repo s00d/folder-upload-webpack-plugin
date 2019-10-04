@@ -1,0 +1,33 @@
+{
+  "name": "folder-upload-webpack-plugin",
+  "version": "1.0.0",
+  "description": "Upload your folder to ssh sftp server after build, add support to 'webpack --watch'",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/s00d/folder-upload-webpack-plugin.git"
+  },
+  "keywords": [
+    "ssh",
+    "sftp",
+    "webpack",
+    "upload",
+    "folder",
+    "faster"
+  ],
+  "author": "Kuzmin Pavel <Virus191288@gmail.com>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/s00d/folder-upload-webpack-plugin/issues"
+  },
+  "homepage": "https://github.com/s00d/folder-upload-webpack-plugin#readme",
+  "dependencies": {
+    "archiver": "^3.1.1",
+    "chalk": "^2.4.2",
+    "fs-extra": "^8.1.0",
+    "ssh2-sftp-client": "^4.2.0"
+  }
+}
