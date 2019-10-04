@@ -40,12 +40,16 @@ folder|local folder|String|(none)
 clear|optional clear server folder before upload|Boolean|true
 logging|optional show log|Boolean|false
 compress|optional compress level|Int|0
-chmod|optional compress level|Octal|0o644
 
+### Extend Options Detail:
+
+Option Name|Usage|Type|Default Value
+---|:--:|:--:|:-:
 archive|optional archive name|String|FolderUploadWebpackPlugin.zip
 compressor|optional compressor class|Class|see code
 ssh|optional ssh class|Class|see code
 unCompress|optional compressor class|String|unzip
+chmod|optional compress level|Octal|0o644
 
 for other options you can see  https://github.com/mscdex/ssh2#client-methods
 
