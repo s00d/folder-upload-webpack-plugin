@@ -73,10 +73,8 @@ module.exports = class SshClient {
                   return await self.fastPut(file.fillPath, remoteFile);
                 }();
               }
-              console.log(err.toString());
             })
             .then(result => {
-              console.log(result);
               if (result) {
                 uploaded++;
                 self.progress && pb.render({
@@ -88,8 +86,6 @@ module.exports = class SshClient {
             })
           }
         ));
-
-        console.log('\n' + chalk.green('Upload done!'));
       }
     }
     async symlink(remotePath) {
