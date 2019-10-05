@@ -1,6 +1,6 @@
 {
   "name": "folder-upload-webpack-plugin",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "description": "Upload your folder to ssh sftp server after build, add support to 'webpack --watch'",
   "main": "index.js",
   "scripts": {

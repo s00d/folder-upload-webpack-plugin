@@ -6,21 +6,24 @@ const SshClient = require('./utils/ssh');
 
 class FolderUploadWebpackPlugin {
     constructor(options = {}) {
-        if(!options.folder) {
-            throw new Error('folder not set')
+        if(!options.paths) {
+            throw new Error('paths not set')
         }
         options.port = options.port || '22';
-        options.clear = options.port || false;
+        options.clear = options.clear || false;
         options.compress = options.compress || 0;
         options.logging = !options.logging ? false : options.logging;
         options.progress = !options.progress ? true : options.progress;
-        options.folderName = options.folder.match(/([^\/]*)\/*$/)[1];
+        // options.folderName = options.folder.match(/([^\/]*)\/*$/)[1];
         options.firstEmit = options.firstEmit === undefined ? true : options.firstEmit;
         options.chmod = !options.chmod ? 0o644 : options.chmod;
         options.compressor = options.compressor ? new options.compressor(options.logging, options.progress) : new Compressor(options.logging, options.progress);
         options.archive = options.archive ? options.archive : 'FolderUploadWebpackPlugin.zip';
         options.ssh = options.ssh ? new options.ssh(options.logging, options.progress) : new SshClient(options.logging, options.progress);
         options.unCompress = options.unCompress ? options.unCompress : 'unzip';
+        options.pathsClear = new RegExp(options.pathsClear ? options.pathsClear : '', 'gui');
+
+
         // options.debug = (debug) => {
         //     console.log(debug)
         // };
@@ -31,55 +34,77 @@ class FolderUploadWebpackPlugin {
     apply(compiler) {
         // for different webpack version
         if (compiler.hooks) {
-            compiler.hooks.afterEmit.tap('after-emit', this.upload);
-            // compiler.hooks.beforeRun.tap('before-run', this.upload);
+            // compiler.hooks.afterEmit.tap('after-emit', this.upload);
+            compiler.hooks.beforeRun.tap('before-run', this.upload);
         } else {
-            compiler.plugin('after-emit', this.upload);
-            // compiler.plugin('before-run', this.upload);
+            // compiler.plugin('after-emit', this.upload);
+            compiler.plugin('before-run', this.upload);
         }
     }
 
-    async upload(compilation, callback) {
-        const {folder, remotePath, logging, clear, folderName, archive, unCompress, chmod, compress, compressor, ssh, ...others} = this.options;
-        await ssh.connect({...others});
-        if(this.options.firstEmit) {
-            this.log('archive creation '+folder+'...', chalk.blue);
-            fs.removeSync(path.resolve(__dirname, archive));
-            await compressor.compress(this.options);
-
-            this.log('archive created...', chalk.blue);
-            try {
-                await ssh.exists(remotePath);
-                if (clear) {
-                    this.log('Clearing remote folder '+formatRemotePath(remotePath, folderName)+' ...', chalk.red);
-                    await ssh.exec('rm -rf ' + formatRemotePath(remotePath, folderName));
-                }
-                try{await ssh.exec('rm ' + formatRemotePath(remotePath, archive));}catch (e) {}
-            } catch (e) {
-                await ssh.mkdir(formatRemotePath(remotePath), true);
-            }
+    pathConverter(string) {
+        return {
+            name: path.basename(string),
+            path: path.dirname(string),
+            remotePath: path.dirname(string).replace(this.options.pathsClear, '') + '/',
+            fillPath: string
         }
-        // dd();
+    }
 
-        this.options.firstEmit = false;
+  async walk(dir, fileList = []) {
+    const files = await fs.readdir(dir);
+    for (const file of files) {
+      const stat = await fs.stat(path.join(dir, file));
+      if (stat.isDirectory()) {
+          fileList = await this.walk(path.join(dir, file), fileList);
+      } else {
+          fileList.push(this.pathConverter(path.join(dir, file)));
+      }
+    }
+    return fileList
+  }
+
+    async upload(compilation, callback) {
+      const {paths, pathsClear, remotePath, logging, clear, archive, unCompress, chmod, ssh, ...others} = this.options;
+
+      if(this.options.firstEmit) {
+        await ssh.connect({...others});
+
+        let filesList = [];
+        let dirList = {};
+        for(let i in paths) {
+          filesList = await this.walk(paths[i]);
+        }
+        for(let i in filesList) {
+          dirList[filesList[i].remotePath] = filesList[i].remotePath
+        }
+        dirList = Object.keys(dirList);
+
+        if (clear) {
+          this.log('Clearing remote folder '+formatRemotePath(remotePath)+'* ...', chalk.red);
+          await ssh.exec('rm -rf ' + formatRemotePath(remotePath)+ '*');
+        }
+
+        for(let i in dirList) {
+          try {
+            await ssh.exists(remotePath);
+          } catch (e) {}
+          try {
+            this.log('MAKE remote folder '+formatRemotePath(remotePath, dirList[i])+' ...', chalk.green);
+            await ssh.mkdir(formatRemotePath(remotePath, dirList[i]), true).catch(() => null);
+          } catch (e) {}
+        }
 
         this.log('Uploading...', chalk.green);
-        await ssh.sendFile(path.resolve(__dirname, archive), formatRemotePath(remotePath, archive));
-
-        this.log('cd ' + remotePath + ' && '+unCompress+' ' + archive, chalk.blue);
-        await ssh.exec('cd ' + formatRemotePath(remotePath, '') + ' && '+unCompress+' ' + archive);
-        // await ssh.exec('ln -s '+formatRemotePath(remotePath, '')+' ' + formatRemotePath(remotePath, ''));
-        await ssh.chmod(formatRemotePath(remotePath, folderName), chmod);
-
-        this.log('clear...', chalk.red);
-        await ssh.delete(formatRemotePath(remotePath, archive));
-        await fs.removeSync(path.resolve(__dirname, archive));
+        await ssh.sendFile(filesList, remotePath);
 
         await ssh.end();
 
         if (callback) {
-            callback();
+          callback();
         }
+      }
+      this.options.firstEmit = false;
     }
 
     log(text, formatter = chalk) {
@@ -91,7 +116,7 @@ class FolderUploadWebpackPlugin {
 }
 
 function formatRemotePath(remotePath, filePath = '') {
-    return (remotePath + '/' + filePath).replace(/\\/g, '/').replace(/\.\//g, "").replace(/\/\//g, "/");
+    return (remotePath + '/' + filePath).replace(/\\/g, '/').replace(/\.\//g, "").replace(/\/\/+/g, "/");
 }
 
 module.exports = FolderUploadWebpackPlugin;

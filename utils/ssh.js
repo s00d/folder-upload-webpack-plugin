@@ -53,7 +53,39 @@ module.exports = class SshClient {
         return await this.sftp.mkdir(remotePath, true);
     }
 
-    async sendFile(archive, remotePath) {
+    async sendFile(files, remotePath) {
+        let self = this;
+        let uploaded = 0;
+        const pb = new ProgressBar('Sending...', 20);
+        await Promise.all(files.map(file => {
+            let remoteFile = path.resolve(remotePath + file.remotePath + file.name);
+            this.log('Put: '+file.fillPath+' to server '+remoteFile, chalk.yellow);
+
+            // await compressor.compress(this.options);
+            // await this.conn.exec('rm ' + remoteFile);
+            return this.sftp.fastPut(file.fillPath, remoteFile)
+              .catch((err) => {
+                  if (err.toString().includes("No such file")) {
+                      this.log(`File: "${path.resolve(remotePath + file.remotePath)}"'s folder not exists,make a folder and retrying...`, chalk.yellow);
+                      return async function retry() {
+                          await self.sftp.mkdir(path.resolve(remotePath + file.remotePath), true).catch(() => null);
+                          return await self.fastPut(file.fillPath, remoteFile);
+                      }();
+                  }
+              })
+              .then(result => {
+                  if (result) {
+                      uploaded++;
+                      this.progress && pb.render({
+                          percent: (uploaded / files.length).toFixed(4),
+                          completed: uploaded,
+                          total: files.length,
+                      })
+                  }
+              })
+        }));
+    }
+    async sendFile1(archive, remotePath) {
         return await new Promise((resolve, reject) => {
             this.log('Put: '+archive+' to server '+remotePath, chalk.yellow);
             const fileSize = this.getFileSizeInBytes(archive);

@@ -36,7 +36,8 @@ port|Number of ssh port| String | "22"
 username|Username for authentication|String|(none)
 password|optional Password for authentication|String|(none)
 remotePath|Folder path on server|String|(none)
-folder|local folder|String|(none)
+paths|local folders in array|Array|(none)
+pathsClear|remove from local path|String|''
 clear|optional clear server folder before upload|Boolean|true
 logging|optional show log|Boolean|false
 compress|optional compress level|Int|0
@@ -54,6 +55,11 @@ chmod|optional compress level|Octal|0o644
 for other options you can see  https://github.com/mscdex/ssh2#client-methods
 
 ## Change Log
+
+### 1.1.0
+```
+- change upload type
+```
 
 ### 1.0.0
 ```
