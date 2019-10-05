@@ -31,10 +31,7 @@ var webpackConfig = {
 
 Option Name|Usage|Type|Default Value
 ---|:--:|:--:|:-:
-host|Server's IP address|String|(none)
-port|Number of ssh port| String | "22"
-username|Username for authentication|String|(none)
-password|optional Password for authentication|String|(none)
+server|ssh config for options you can see https://github.com/mscdex/ssh2#client-methods|Object|{port:22}
 remotePath|Folder path on server|String|(none)
 paths|local folders in array|Array|(none)
 pathsClear|remove from local path|String|''
