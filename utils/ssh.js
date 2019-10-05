@@ -13,9 +13,9 @@ module.exports = class SshClient {
 
     async connect(options = {}) {
         this.options = options;
-        this.conn = await this.ssh2connect({...options});
+        this.conn = await this.ssh2connect({...this.options});
         this.sftp = new sftpClient();
-        await this.sftp.connect({...options});
+        await this.sftp.connect({...this.options});
     }
 
     async ssh2connect(config) {
@@ -54,43 +54,44 @@ module.exports = class SshClient {
     }
 
     async sendFile(files, remotePath) {
-        let self = this;
-        let uploaded = 0;
-        const pb = new ProgressBar('Sending...', 20);
+      let self = this;
+      let uploaded = 0;
+
+      const pb = new ProgressBar('Sending...', 20);
+
+      if (files.length > 0) {
         await Promise.all(files.map(file => {
-            let remoteFile = path.resolve(remotePath + file.remotePath + file.name);
-            this.log('Put: '+file.fillPath+' to server '+remoteFile, chalk.yellow);
+          let remoteFile = path.resolve(remotePath + file.remotePath + file.name);
+          // console.info(file.fillPath, remoteFile);
+          this.log('Put: ' + file.fillPath + ' to server ' + remoteFile, chalk.yellow);
+          return this.sftp.fastPut(file.fillPath, remoteFile)
+            .catch((err) => {
+              if (err.toString().includes("No such file")) {
+                this.log(`File: "${path.resolve(remotePath + file.remotePath)}"'s folder not exists,make a folder and retrying...`, chalk.yellow);
+                return async function retry() {
+                  await self.sftp.mkdir(path.resolve(remotePath + file.remotePath), true).catch(() => null);
+                  return await self.fastPut(file.fillPath, remoteFile);
+                }();
+              }
+              console.log(err.toString());
+            })
+            .then(result => {
+              console.log(result);
+              if (result) {
+                uploaded++;
+                self.progress && pb.render({
+                  percent: (uploaded / files.length).toFixed(4),
+                  completed: uploaded,
+                  total: files.length,
+                })
+              }
+            })
+          }
+        ));
 
-            // await compressor.compress(this.options);
-            // await this.conn.exec('rm ' + remoteFile);
-            return this.sftp.fastPut(file.fillPath, remoteFile)
-              .catch((err) => {
-                  if (err.toString().includes("No such file")) {
-                      this.log(`File: "${path.resolve(remotePath + file.remotePath)}"'s folder not exists,make a folder and retrying...`, chalk.yellow);
-                      return async function retry() {
-                          await self.sftp.mkdir(path.resolve(remotePath + file.remotePath), true).catch(() => null);
-                          return await self.fastPut(file.fillPath, remoteFile);
-                      }();
-                  }
-              })
-              .then(result => {
-                  if (result) {
-                      uploaded++;
-                      this.progress && pb.render({
-                          percent: (uploaded / files.length).toFixed(4),
-                          completed: uploaded,
-                          total: files.length,
-                      })
-                  }
-              })
-        }));
+        console.log('\n' + chalk.green('Upload done!'));
+      }
     }
-
-    getFileSizeInBytes(filename) {
-        const stats = fs.statSync(filename);
-        return stats.size;
-    }
-
     async symlink(remotePath) {
         return await this.sftp.mkdir(remotePath, true);
     }

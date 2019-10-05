@@ -9,7 +9,7 @@ class FolderUploadWebpackPlugin {
         if(!options.paths) {
             throw new Error('paths not set')
         }
-        options.port = options.port || '22';
+        options.server.port = options.server.port || '22';
         options.clear = options.clear || false;
         options.compress = options.compress || 0;
         options.logging = !options.logging ? false : options.logging;
@@ -34,15 +34,18 @@ class FolderUploadWebpackPlugin {
     apply(compiler) {
         // for different webpack version
         if (compiler.hooks) {
-            // compiler.hooks.afterEmit.tap('after-emit', this.upload);
-            compiler.hooks.beforeRun.tap('before-run', this.upload);
+            compiler.hooks.afterEmit.tap('after-emit', this.upload);
+            // compiler.hooks.beforeRun.tap('before-run', this.upload);
         } else {
-            // compiler.plugin('after-emit', this.upload);
-            compiler.plugin('before-run', this.upload);
+            compiler.plugin('after-emit', this.upload);
+            // compiler.plugin('before-run', this.upload);
         }
     }
 
     pathConverter(string) {
+        let basename = path.basename(string);
+        let dirname = path.dirname(string);
+        let remotePath = path.dirname(string).replace(this.options.pathsClear, '') + '/';
         return {
             name: path.basename(string),
             path: path.dirname(string),
@@ -65,10 +68,10 @@ class FolderUploadWebpackPlugin {
   }
 
     async upload(compilation, callback) {
-      const {paths, pathsClear, remotePath, logging, clear, archive, unCompress, chmod, ssh, ...others} = this.options;
+      const {paths, pathsClear, remotePath, logging, clear, archive, unCompress, chmod, ssh, server} = this.options;
 
       if(this.options.firstEmit) {
-        await ssh.connect({...others});
+        await ssh.connect(server);
 
         let filesList = [];
         let dirList = {};
@@ -97,14 +100,14 @@ class FolderUploadWebpackPlugin {
 
         this.log('Uploading...', chalk.green);
         await ssh.sendFile(filesList, remotePath);
-
+        this.log('end', chalk.green);
         await ssh.end();
-
-        if (callback) {
-          callback();
-        }
       }
       this.options.firstEmit = false;
+
+      if (callback) {
+        callback();
+      }
     }
 
     log(text, formatter = chalk) {
