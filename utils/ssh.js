@@ -85,46 +85,6 @@ module.exports = class SshClient {
               })
         }));
     }
-    async sendFile1(archive, remotePath) {
-        return await new Promise((resolve, reject) => {
-            this.log('Put: '+archive+' to server '+remotePath, chalk.yellow);
-            const fileSize = this.getFileSizeInBytes(archive);
-            const pb = new ProgressBar('Sending...', 20);
-            this.sftp.fastPut(archive, remotePath, {
-                step: step => {
-                    const percent = (step / fileSize).toFixed(4);
-                    this.progress && pb.render({
-                        percent: percent,
-                        completed: this.bytesToSize(step),
-                        total: this.bytesToSize(fileSize),
-                    })
-                }
-            }).catch((err) => {
-                // upload err checker, if err end with "No such file", it will make dir and retry
-                if (err.toString().includes("No such file")) {
-                    this.log(`Вolder: ${remotePath} not exists,make a folder and retrying...`, chalk.yellow);
-                    return async function retry() {
-                        await sftp.mkdir(remotePath, true).catch(() => null);
-                        await sftp.put(path.resolve(__dirname, archive), formatRemotePath(remotePath, archive));
-                        resolve();
-                    }();
-                }else {
-                    reject();
-                }
-            })
-                .then(result => {
-                    // if (result) {
-                    //     uploadedFiles.push(file);
-                    //     log && log.progress && pb.render({
-                    //         percent: (uploadedFiles.length / files.length).toFixed(4),
-                    //         completed: uploadedFiles.length,
-                    //         total: files.length,
-                    //     })
-                    // }
-                    resolve();
-                });
-        });
-    }
 
     getFileSizeInBytes(filename) {
         const stats = fs.statSync(filename);
@@ -146,13 +106,6 @@ module.exports = class SshClient {
     async end() {
         await this.conn.end();
         await this.sftp.end();
-    }
-
-    bytesToSize(bytes) {
-        const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-        if (bytes == 0) return '0 Byte';
-        const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)));
-        return Math.round(bytes / Math.pow(1024, i), 2) + ' ' + sizes[i];
     }
 
     log(text, formatter = chalk) {
