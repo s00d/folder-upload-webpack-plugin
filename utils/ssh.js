@@ -1,5 +1,5 @@
-const ssh2Client = require('ssh2').Client;
-const sftpClient = require('ssh2-sftp-client');
+const Ssh2Client = require('ssh2').Client;
+const SftpClient = require('ssh2-sftp-client');
 const fs = require('fs-extra');
 const chalk = require('chalk');
 const path = require('path');
@@ -14,13 +14,13 @@ module.exports = class SshClient {
     async connect(options = {}) {
         this.options = options;
         this.conn = await this.ssh2connect({...this.options});
-        this.sftp = new sftpClient();
+        this.sftp = new SftpClient();
         await this.sftp.connect({...this.options});
     }
 
     async ssh2connect(config) {
         return await new Promise((resolve, reject) => {
-            let conn = new ssh2Client();
+            let conn = new Ssh2Client();
             conn.on('ready', () => resolve(conn)).on('error', reject).connect(config)
         })
     }
@@ -32,11 +32,13 @@ module.exports = class SshClient {
                 if (err) {
                     return reject(err)
                 }
+                let stdout = Buffer.concat([]);
                 stream.on('close', (code, signal) => {
-                    this.log('Streeam :: close :: code: '+code+', signal: ' + signal, chalk.blue);
-                    resolve();
+                    // this.log('Streeam :: close :: code: '+code+', signal: ' + signal, chalk.blue);
+                    resolve(stdout.toString());
                 }).on('data', (data) => {
-                    // this.log('STDOUT: ' + data, chalk.blue)
+                    stdout = Buffer.concat([stdout, data]);
+                    // this.log('STDOUT: ' + data.toString(), chalk.green)
                 }).stderr.on('data', (data) => {
                     this.log('STDERR: '+ data, chalk.red);
                     reject();
@@ -46,11 +48,13 @@ module.exports = class SshClient {
     }
 
     async exists(remotePath) {
-        return await this.sftp.exists(remotePath);
+        let exits = await this.exec(`[ -d ${remotePath} ] && echo "exits"`);
+        return exits === 'exits';
     }
 
     async mkdir(remotePath) {
-        return await this.sftp.mkdir(remotePath, true);
+        return await this.exec(`mkdir -p ${remotePath}`);
+        // return await this.sftp.mkdir(remotePath, true);
     }
 
     async sendFile(files, remotePath) {
@@ -70,7 +74,7 @@ module.exports = class SshClient {
                 this.log(`File: "${path.resolve(remotePath + file.remotePath)}"'s folder not exists,make a folder and retrying...`, chalk.yellow);
                 return async function retry() {
                   await self.sftp.mkdir(path.resolve(remotePath + file.remotePath), true).catch(() => null);
-                  return await self.fastPut(file.fillPath, remoteFile);
+                  return await self.sftp.fastPut(file.fillPath, remoteFile);
                 }();
               }
             })
