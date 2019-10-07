@@ -31,7 +31,7 @@ var webpackConfig = {
 
 Option Name|Usage|Type|Default Value
 ---|:--:|:--:|:-:
-server|ssh config for options you can see https://github.com/mscdex/ssh2#client-methods|Object|{port:22}
+server|ssh config for options(or Array, to multiple servers) you can see https://github.com/mscdex/ssh2#client-methods|Object|{port:22}
 remotePath|Folder path on server|String|(none)
 paths|local folders in array|Array|(none)
 pathsClear|remove from local path|String|''
