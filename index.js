@@ -27,7 +27,7 @@ class FolderUploadWebpackPlugin {
         options.archive = options.archive ? options.archive : 'FolderUploadWebpackPlugin.zip';
         options.ignore = options.ignore ? options.ignore : null;
         options.ssh = options.ssh ? new options.ssh(options.logging, options.progress) : new SshClient(options.logging, options.progress);
-        options.pathsClear = new RegExp(options.pathsClear ? options.pathsClear : '', 'gui');
+        options.pathsClear = options.pathsClear? options.pathsClear : (val) => val;
         options.confirmation = options.confirmation ? options.confirmation : false;
 
         this.options = options;
@@ -48,7 +48,7 @@ class FolderUploadWebpackPlugin {
         return {
             name: path.basename(string),
             path: path.dirname(string),
-            remotePath: path.dirname(string).replace(this.options.pathsClear, '') + '/',
+            remotePath: this.options.pathsClear(path.dirname(string)) + '/',
             fillPath: string,
             size: size
         }
