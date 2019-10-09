@@ -139,7 +139,7 @@ class FolderUploadWebpackPlugin {
         const baseDir = process.cwd();
         process.chdir(inputPath);
         const origin = path.relative(path.dirname(options.path), inputPath);
-        this.log('Symlink path: ' + options.path, chalk.green);
+        this.log('Symlink path: ' + origin, chalk.green);
         try {
           if (clear) {
             if (fs.existsSync(options.path)) {
