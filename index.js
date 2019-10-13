@@ -27,8 +27,8 @@ class FolderUploadWebpackPlugin {
         options.archive = options.archive ? options.archive : 'FolderUploadWebpackPlugin.zip';
         options.ignore = options.ignore ? options.ignore : null;
         options.ssh = options.ssh ? new options.ssh(options.logging, options.progress) : new SshClient(options.logging, options.progress);
-        options.pathsClear = options.pathsClear? options.pathsClear : (val) => val;
         options.confirmation = options.confirmation ? options.confirmation : false;
+        options.paths = options.paths ? options.paths() : {};
 
         this.options = options;
         this.upload = this.upload.bind(this);
@@ -44,67 +44,69 @@ class FolderUploadWebpackPlugin {
         }
     }
 
-    pathConverter(string, size = 0) {
+    pathConverter(local, remote, size = 0) {
         return {
-            name: path.basename(string),
-            path: path.dirname(string),
-            remotePath: this.options.pathsClear(path.dirname(string)) + '/',
-            fillPath: string,
+            name: path.basename(local),
+            path: path.dirname(local),
+            remotePath: path.resolve(remote) + '/',
+            fillPath: local,
             size: size
         }
     }
 
     async walk(dirs) {
+      let cl = {};
       let list = [];
-        for(let i in dirs) {
-          const stat = await fs.stat(dirs[i]);
-          if (!stat.isDirectory()) {
-            if(!this.options.ignore || !path.join(dirs[i]).match(this.options.ignore)){
-              list.push(this.pathConverter(path.join(dirs[i]), stat.size));
-            }
-            continue;
+      for(let i in dirs) {
+        const stat = await fs.stat(i);
+        if (!stat.isDirectory()) {
+          if(!this.options.ignore || !path.join(i).match(this.options.ignore)){
+            list.push(this.pathConverter(path.join(i), path.join(dirs[i]), stat.size));
+            cl[path.resolve(dirs[i]) + '/'] = true;
           }
+          continue;
+        }
 
-          const files = await fs.readdir(dirs[i]);
-          for (const file of files) {
-            const stat = await fs.stat(path.join(dirs[i], file));
-            if (stat.isDirectory()) {
-              list.concat(this.walk(path.join(dirs[i], file)))
-              // await this.walk(path.join(dirs[i], file));
-            } else {
-              if(!this.options.ignore || !path.join(dirs[i], file).match(this.options.ignore)){
-                list.push(this.pathConverter(path.join(dirs[i], file), stat.size));
-              }
+        const files = await fs.readdir(i);
+        for (const file of files) {
+          const stat = await fs.stat(path.join(i, file));
+          if (stat.isDirectory()) {
+            list.concat(this.walk(path.join(i, file)))
+          } else {
+            if(!this.options.ignore || !path.join(i, file).match(this.options.ignore)){
+              list.push(this.pathConverter(path.join(i, file), path.join(dirs[i]), stat.size));
+              cl[path.resolve(dirs[i]) + '/'] = true;
             }
           }
         }
+      }
 
-        return list
+        return [list, Object.keys(cl)]
     }
 
     async upload(compilation, callback) {
-      const {paths, remotePath, clear, ssh, chmod, server} = this.options;
+      const {paths, clear, ssh, chmod, server} = this.options;
 
       if(!this.options.confirmation || readline.keyInYN(chalk.bold.red("\nAre you sure you want to replace the server?"))) {
         if(this.options.firstEmit) {
           for(let i in server) {
-            let filesList = await this.walk(paths);
+            let [filesList, cl] = await this.walk(paths);
+
+            console.log(filesList, cl);
 
             server[i].port = server[i].port || '22';
             await ssh.connect(server[i]);
 
-            if (clear) {
-              this.log('Clearing remote folder '+formatRemotePath(remotePath)+'* ...', chalk.red);
-              await ssh.exec('rm -rf ' + formatRemotePath(remotePath)+ '*');
-            }
+            for(let i in cl) {
+              let dir = formatRemotePath(cl[i]);
+              if (clear) {
+                try {
+                  this.log('Clearing remote folder '+dir+'* ...', chalk.red);
+                  await ssh.exec('rm -rf ' + formatRemotePath(cl[i])+ '*');
+                } catch (e) {}
+              }
 
-            let dirList = {};
-            for(let i in filesList) {
               try {
-                let dir = formatRemotePath(remotePath, filesList[i].remotePath);
-                if(dirList.hasOwnProperty(dir)) continue;
-                dirList[dir] = dir;
-
                 if(!await ssh.exists(dir)) {
                   this.log('MAKE remote folder '+dir+' ...', chalk.green);
                   await ssh.mkdir(dir, true).catch(() => null);
@@ -114,7 +116,7 @@ class FolderUploadWebpackPlugin {
             }
 
             this.log('Uploading...', chalk.green);
-            await ssh.sendFile(filesList, remotePath);
+            await ssh.sendFile(filesList);
             this.log('end', chalk.green);
             await ssh.end();
           }

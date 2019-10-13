@@ -31,10 +31,8 @@ var webpackConfig = {
 
 Option Name|Usage|Type|Default Value
 ---|:--:|:--:|:-:
-server|ssh config for options(or Array, to multiple servers) you can see https://github.com/mscdex/ssh2#client-methods|Object|{port:22}
-remotePath|Folder path on server|String|(none)
-paths|local folders in array|Array|(none)
-pathsClear|remove from local path|callback|''
+server|ssh config for options(or Array, to multiple servers) you can see [docs](https://github.com/mscdex/ssh2#client-methods)|Object|{port:22}
+paths|function - return object {local: remote}, see path example|Function|(none)
 clear|optional clear server folder before upload|Boolean|true
 logging|optional show log|Boolean|false
 compress|optional compress level|Int|0
@@ -51,7 +49,24 @@ chmod|optional compress level|Octal|0o644
 
 for other options you can see  https://github.com/mscdex/ssh2#client-methods
 
+## path example
+
+```
+... 
+paths: () => {
+    let data = [];
+    data[path.resolve(__dirname, "build_/")] = path.join("...build/");
+    return data;
+},...
+```
+
 ## Change Log
+
+### 2.0.0
+```
+- replace paths. see Options
+- remove pathsClear && remotePath
+```
 
 ### 1.1.0
 ```
