@@ -41,10 +41,7 @@ compress|optional compress level|Int|0
 
 Option Name|Usage|Type|Default Value
 ---|:--:|:--:|:-:
-archive|optional archive name|String|FolderUploadWebpackPlugin.zip
-compressor|optional compressor class|Class|see code
 ssh|optional ssh class|Class|see code
-unCompress|optional compressor class|String|unzip
 chmod|optional compress level|Octal|0o644
 
 for other options you can see  https://github.com/mscdex/ssh2#client-methods
