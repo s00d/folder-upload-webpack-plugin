@@ -13,7 +13,7 @@ npm i -D folder-upload-webpack-plugin
 add following code to your webpack config file.
 ```javascript
 const FolderUploadWebpackPlugin = require('folder-upload-webpack-plugin');
-var webpackConfig = {
+let webpackConfig = {
   entry: 'index.js',
   output: {
     path: 'assets',
@@ -21,7 +21,15 @@ var webpackConfig = {
   },
   plugins: [
     new FolderUploadWebpackPlugin({
-        // config options, you can find options detail down here
+      confirmation: true,
+      server: {host: 'ip', port: '22', username: 'username', password: 'password'},
+      paths: () => {
+        let data = [];
+        data[path.resolve(__dirname, "build_/")] = path.join(".../build/");
+        return data;
+      },
+      clear: true,
+      logging: false,
     })
   ]
 }
@@ -31,11 +39,12 @@ var webpackConfig = {
 
 Option Name|Usage|Type|Default Value
 ---|:--:|:--:|:-:
+confirmation|show confirmation before upload|Boolean|false
 server|ssh config for options(or Array, to multiple servers) you can see [docs](https://github.com/mscdex/ssh2#client-methods)|Object|{port:22}
 paths|function - return object {local: remote}, see path example|Function|(none)
 clear|optional clear server folder before upload|Boolean|true
 logging|optional show log|Boolean|false
-compress|optional compress level|Int|0
+symlink|create local symlink, after upload|object|null
 
 ### Extend Options Detail:
 
