@@ -52,6 +52,8 @@ Option Name|Usage|Type|Default Value
 ---|:--:|:--:|:-:
 ssh|optional ssh class|Class|see code
 chmod|optional compress level|Octal|0o644
+before|optional array with command|Array|[]
+after|optional array with command|Array|[]
 
 for other options you can see  https://github.com/mscdex/ssh2#client-methods
 
@@ -67,6 +69,11 @@ paths: () => {
 ```
 
 ## Change Log
+
+### 2.1.0
+```
+- add after and before command
+```
 
 ### 2.0.0
 ```
