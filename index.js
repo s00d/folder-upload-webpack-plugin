@@ -111,8 +111,6 @@ class FolderUploadWebpackPlugin {
         for (let i in server) {
           let [filesList, cl] = await this.walk(paths);
 
-          console.log(filesList, cl);
-
           server[i].port = server[i].port || '22';
           await ssh.connect(server[i]);
 
