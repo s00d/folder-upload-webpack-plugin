@@ -20,7 +20,7 @@ class FolderUploadWebpackPlugin {
     }
     options.server = isObject(options.server) ? [options.server] : options.server;
 
-    options.enable = options.enable || true;
+    options.enable = options.enable === undefined ? true : options.enable;
     options.clear = options.clear || false;
     options.logging = !options.logging ? false : options.logging;
     options.progress = !options.progress ? true : options.progress;
