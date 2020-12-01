@@ -20,6 +20,7 @@ class FolderUploadWebpackPlugin {
     }
     options.server = isObject(options.server) ? [options.server] : options.server;
 
+    options.enable = options.enable || true;
     options.clear = options.clear || false;
     options.logging = !options.logging ? false : options.logging;
     options.progress = !options.progress ? true : options.progress;
@@ -43,6 +44,7 @@ class FolderUploadWebpackPlugin {
   }
 
   apply(compiler) {
+    if(!this.options.enable) return;
     if (compiler.hooks) {
       compiler.hooks.afterEmit.tap('folder-upload-webpack-plugin', this.upload);
       // compiler.hooks.beforeRun.tap('before-run', this.upload);

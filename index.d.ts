@@ -8,18 +8,19 @@ declare class FolderUploadWebpackPlugin extends Plugin {
 
 declare namespace FolderUploadWebpackPlugin {
     interface Options {
-        confirmation: boolean,
-        server: {host: string, port: string|number, username: string|number, password: string|number},
-        paths: () => any,
-        clear: boolean,
-        logging: boolean,
-        progress: boolean,
-        firstEmit: boolean,
-        archive: string,
-        chmod: any,
-        ignore: any,
-        symlink: { path: string, force: boolean },
-        before: Array<any>
-        after: Array<any>
+        confirmation?: boolean,
+        server: {host: string, port: string|number, username: string|number, password: string|number}|Array<{host: string, port: string|number, username: string|number, password: string|number}>,
+        paths?: () => any,
+        clear?: boolean,
+        enable?: boolean,
+        logging?: boolean,
+        progress?: boolean,
+        firstEmit?: boolean,
+        archive?: string,
+        chmod?: any,
+        ignore?: any,
+        symlink?: { path: string, force: boolean },
+        before?: Array<any>
+        after?: Array<any>
     }
 }
