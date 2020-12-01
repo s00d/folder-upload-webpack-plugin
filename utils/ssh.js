@@ -65,7 +65,7 @@ module.exports = class SshClient {
       if (files.length > 0) {
         let sliced_array = [];
         for (let i = 0; i < files.length; i += 99) {
-          sliced_array.push(files.slice(i, i + 9));
+          sliced_array.push(files.slice(i, i + 99));
         }
 
         for (let i in sliced_array) {
