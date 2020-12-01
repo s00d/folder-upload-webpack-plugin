@@ -63,32 +63,42 @@ module.exports = class SshClient {
       const pb = new ProgressBar('Sending...', 20);
 
       if (files.length > 0) {
-        await Promise.all(files.map(file => {
-          let remoteFile = path.resolve(file.remotePath + file.name);
-          // console.info(file.fillPath, remoteFile);
-          this.log('Put: ' + file.fillPath + ' to server ' + remoteFile, chalk.yellow);
-          return this.sftp.fastPut(file.fillPath, remoteFile)
-            .catch((err) => {
-              if (err.toString().includes("No such file")) {
-                this.log(`File: "${path.resolve(file.remotePath)}"'s folder not exists,make a folder and retrying...`, chalk.yellow);
-                return async function retry() {
-                  await self.sftp.mkdir(path.resolve(file.remotePath), true).catch(() => null);
-                  return await self.sftp.fastPut(file.fillPath, remoteFile);
-                }();
-              }
-            })
-            .then(result => {
-              if (result) {
-                uploaded++;
-                self.progress && pb.render({
-                  percent: (uploaded / files.length).toFixed(4),
-                  completed: uploaded,
-                  total: files.length,
+        let sliced_array = [];
+        for (let i = 0; i < files.length; i += 99) {
+          sliced_array.push(files.slice(i, i + 9));
+        }
+
+        for (let i in sliced_array) {
+          await Promise.all(sliced_array[i].map(file => {
+              let remoteFile = path.resolve(file.remotePath + file.name);
+              // console.info(file.fillPath, remoteFile);
+              this.log('Put: ' + file.fillPath + ' to server ' + remoteFile, chalk.yellow);
+              return this.sftp.fastPut(file.fillPath, remoteFile, {})
+                .catch((err) => {
+                  this.sftp.removeListener('error', errorListener);
+                  if (err.toString().includes("No such file")) {
+                    this.log(`File: "${path.resolve(file.remotePath)}"'s folder not exists,make a folder and retrying...`, chalk.yellow);
+                    return async function retry() {
+                      await self.sftp.mkdir(path.resolve(file.remotePath), true).catch(() => null);
+                      return await self.sftp.fastPut(file.fillPath, remoteFile);
+                    }();
+                  }
                 })
-              }
-            })
-          }
-        ));
+                .then(result => {
+                  if (result) {
+                    uploaded++;
+                    self.progress && pb.render({
+                      percent: (uploaded / files.length).toFixed(4),
+                      completed: uploaded,
+                      total: files.length,
+                    })
+                  }
+                })
+            }
+          ));
+        }
+
+
       }
     }
     async symlink(remotePath) {
