@@ -1,5 +1,5 @@
 const chalk = require('chalk');
-const fs = require('fs-extra');
+const fs = require('fs');
 const path = require('path');
 const SshClient = require('./utils/ssh');
 const readline = require("readline-sync");
@@ -34,6 +34,10 @@ class FolderUploadWebpackPlugin {
     options.after = options.after ? options.after : [];
     options.before = options.before ? options.before : [];
 
+
+    this.pathList = [];
+    this.cl = {};
+
     this.options = options;
     this.upload = this.upload.bind(this);
   }
@@ -58,34 +62,34 @@ class FolderUploadWebpackPlugin {
     }
   }
 
-  async walk(dirs) {
-    let cl = {};
-    let list = [];
+  walk(dirs) {
     for (let i in dirs) {
-      const stat = await fs.stat(i);
+      const stat = fs.statSync(i);
       if (!stat.isDirectory()) {
         if (!this.options.ignore || !path.join(i).match(this.options.ignore)) {
-          list.push(this.pathConverter(path.join(i), path.join(dirs[i]), stat.size));
-          cl[path.resolve(dirs[i]) + '/'] = true;
+          this.pathList.push(this.pathConverter(path.join(i), path.join(dirs[i]), stat.size));
+          this.cl[path.join(dirs[i], '/')] = true;
         }
         continue;
       }
 
-      const files = await fs.readdir(i);
+      const files = fs.readdirSync(i);
       for (const file of files) {
-        const stat = await fs.stat(path.join(i, file));
+        const stat = fs.statSync(path.join(i, file));
         if (stat.isDirectory()) {
-          list.concat(this.walk(path.join(i, file)))
+          let data = {};
+          data[path.join(i, file)] = path.join(dirs[i], file);
+          this.pathList.concat(this.walk(data))
         } else {
           if (!this.options.ignore || !path.join(i, file).match(this.options.ignore)) {
-            list.push(this.pathConverter(path.join(i, file), path.join(dirs[i]), stat.size));
-            cl[path.resolve(dirs[i]) + '/'] = true;
+            this.pathList.push(this.pathConverter(path.join(i, file), path.join(dirs[i]), stat.size));
+            this.cl[path.join(dirs[i], '/')] = true;
           }
         }
       }
     }
 
-    return [list, Object.keys(cl)]
+    return [this.pathList, Object.keys(this.cl)]
   }
 
   handleScript(script) {
