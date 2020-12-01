@@ -118,16 +118,18 @@ class FolderUploadWebpackPlugin {
           server[i].port = server[i].port || '22';
           await ssh.connect(server[i]);
 
-          for (let i in cl) {
-            let dir = formatRemotePath(cl[i]);
+          for (let i in paths) {
             if (clear) {
               try {
-                this.log('Clearing remote folder ' + dir + '* ...', chalk.red);
-                await ssh.exec('rm -rf ' + formatRemotePath(cl[i]) + '*');
+                this.log('Clearing remote folder ' + paths[i] + '* ...', chalk.red);
+                await ssh.exec('rm -rf ' + formatRemotePath(paths[i]) + '*');
               } catch (e) {
               }
             }
+          }
 
+          for (let i in cl) {
+            let dir = formatRemotePath(cl[i]);
             try {
               if (!await ssh.exists(dir)) {
                 this.log('MAKE remote folder ' + dir + ' ...', chalk.green);

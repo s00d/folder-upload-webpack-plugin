@@ -1,6 +1,6 @@
 const archiver = require('archiver');
 const chalk = require('chalk');
-const fs = require('fs-extra');
+const fs = require('fs');
 const path = require('path');
 const ProgressBar = require('./ProgressBar');
 

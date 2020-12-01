@@ -1,6 +1,5 @@
 const Ssh2Client = require('ssh2').Client;
 const SftpClient = require('ssh2-sftp-client');
-const fs = require('fs-extra');
 const chalk = require('chalk');
 const path = require('path');
 const ProgressBar = require('./ProgressBar');
