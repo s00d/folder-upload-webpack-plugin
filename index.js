@@ -46,11 +46,9 @@ class FolderUploadWebpackPlugin {
   apply(compiler) {
     if(!this.options.enable) return;
     if (compiler.hooks) {
-      compiler.hooks.afterEmit.tap('folder-upload-webpack-plugin', this.upload);
-      // compiler.hooks.beforeRun.tap('before-run', this.upload);
+      compiler.hooks.done.tap('folder-upload-webpack-plugin', this.upload);
     } else {
       compiler.plugin('folder-upload-webpack-plugin', this.upload);
-      // compiler.plugin('before-run', this.upload);
     }
   }
 
