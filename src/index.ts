@@ -10,15 +10,15 @@ import {Chalk} from "chalk";
 
 function isObject(a: any) {
   return (!!a) && (a.constructor === Object);
-};
+}
 function isArray(a: any) {
   return (!!a) && (a.constructor === Array);
-};
+}
 
 interface Options {
   confirmation?: boolean,
   server: Array<{host: string, port: string|number, username: string|number, password: string|number}>,
-  paths?: () => any,
+  paths?: () => {[key: string]: string},
   clear?: boolean,
   enable?: boolean,
   logging?: boolean,

@@ -70,6 +70,11 @@ paths: () => {
 
 ## Change Log
 
+### 2.4.0
+```
+- fix ts
+```
+
 ### 2.1.0
 ```
 - add after and before command
