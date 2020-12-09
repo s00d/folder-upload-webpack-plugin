@@ -1,24 +1,49 @@
-const chalk = require('chalk');
-const fs = require('fs');
-const path = require('path');
+import {execSync, spawnSync} from "child_process";
 const SshClient = require('./utils/ssh');
-const readline = require("readline-sync");
-const os = require('os');
-const {spawnSync, execSync} = require('child_process');
+import * as webpack from 'webpack'
+import * as os from "os";
+import * as path from "path";
+import * as fs from "fs-extra";
+import * as chalk from "chalk";
+import readline from "readline-sync";
+import {Chalk} from "chalk";
 
-isObject = function (a) {
+function isObject(a: any) {
   return (!!a) && (a.constructor === Object);
 };
-isArray = function (a) {
+function isArray(a: any) {
   return (!!a) && (a.constructor === Array);
 };
 
+interface Options {
+  confirmation?: boolean,
+  server: Array<{host: string, port: string|number, username: string|number, password: string|number}>,
+  paths?: () => any,
+  clear?: boolean,
+  enable?: boolean,
+  logging?: boolean,
+  progress?: boolean,
+  firstEmit?: boolean,
+  archive?: string,
+  chmod?: any,
+  ignore?: any,
+  symlink?: { path: string, force: boolean },
+  before?: Array<any>
+  after?: Array<any>
+  ssh?: any
+}
+
 class FolderUploadWebpackPlugin {
-  constructor(options = {}) {
+  private pathList: any[];
+  private cl: {[key: string]: boolean };
+  private options: Options;
+  private paths: {[key: string]: string};
+
+
+  constructor(options: Options = {server: []}) {
     if (!options.paths) {
       throw new Error('paths not set')
     }
-    options.server = isObject(options.server) ? [options.server] : options.server;
 
     options.enable = options.enable === undefined ? true : options.enable;
     options.clear = options.clear || false;
@@ -31,7 +56,7 @@ class FolderUploadWebpackPlugin {
     options.ignore = options.ignore ? options.ignore : null;
     options.ssh = options.ssh ? new options.ssh(options.logging, options.progress) : new SshClient(options.logging, options.progress);
     options.confirmation = options.confirmation ? options.confirmation : false;
-    options.paths = options.paths ? options.paths() : {};
+    this.paths = options.paths ? options.paths() : {};
     options.after = options.after ? options.after : [];
     options.before = options.before ? options.before : [];
 
@@ -43,16 +68,16 @@ class FolderUploadWebpackPlugin {
     this.upload = this.upload.bind(this);
   }
 
-  apply(compiler) {
+  apply(compiler: webpack.Compiler) {
     if(!this.options.enable) return;
     if (compiler.hooks) {
-      compiler.hooks.done.tap('folder-upload-webpack-plugin', this.upload);
+      compiler.hooks.done.tapAsync('folder-upload-webpack-plugin', this.upload);
     } else {
       compiler.plugin('folder-upload-webpack-plugin', this.upload);
     }
   }
 
-  pathConverter(local, remote, size = 0) {
+  pathConverter(local: string, remote: string, size = 0) {
     return {
       name: path.basename(local),
       path: path.dirname(local),
@@ -62,7 +87,7 @@ class FolderUploadWebpackPlugin {
     }
   }
 
-  walk(dirs) {
+  walk(dirs: {[key: string]: string}) {
     for (let i in dirs) {
       const stat = fs.statSync(i);
       if (!stat.isDirectory()) {
@@ -77,7 +102,7 @@ class FolderUploadWebpackPlugin {
       for (const file of files) {
         const stat = fs.statSync(path.join(i, file));
         if (stat.isDirectory()) {
-          let data = {};
+          let data: {[key: string]: string} = {};
           data[path.join(i, file)] = path.join(dirs[i], file);
           this.pathList.concat(this.walk(data))
         } else {
@@ -92,7 +117,7 @@ class FolderUploadWebpackPlugin {
     return [this.pathList, Object.keys(this.cl)]
   }
 
-  handleScript(script) {
+  handleScript(script: string) {
     if (os.platform() === 'win32') {
       const buffer = execSync(script, {stdio: 'inherit'});
     } else {
@@ -101,10 +126,10 @@ class FolderUploadWebpackPlugin {
     }
   }
 
-  async upload(compilation, callback) {
-    const {paths, clear, ssh, chmod, server} = this.options;
+  async upload(compilation: webpack.Stats, callback?: Function) {
+    const {clear, ssh, chmod, server} = this.options;
 
-    if (this.options.before.length) {
+    if (this.options.before && this.options.before.length) {
       for (let i in this.options.before) {
         this.handleScript(this.options.before[i])
       }
@@ -113,16 +138,16 @@ class FolderUploadWebpackPlugin {
     if (!this.options.confirmation || readline.keyInYN(chalk.bold.red("\nAre you sure you want to replace the server?"))) {
       if (this.options.firstEmit) {
         for (let i in server) {
-          let [filesList, cl] = await this.walk(paths);
+          let [filesList, cl] = await this.walk(this.paths);
 
           server[i].port = server[i].port || '22';
           await ssh.connect(server[i]);
 
-          for (let i in paths) {
+          for (let i in this.paths) {
             if (clear) {
               try {
-                this.log('Clearing remote folder ' + paths[i] + '* ...', chalk.red);
-                await ssh.exec('rm -rf ' + formatRemotePath(paths[i]) + '*');
+                this.log('Clearing remote folder ' + this.paths[i] + '* ...', chalk.red);
+                await ssh.exec('rm -rf ' + formatRemotePath(this.paths[i]) + '*');
               } catch (e) {
               }
             }
@@ -152,10 +177,10 @@ class FolderUploadWebpackPlugin {
 
     if (this.options.symlink) {
       this.log('Making symlink...', chalk.green);
-      this.createSimlinks(this.options.symlink, compilation.options.output.path, clear)
+      this.createSimlinks(this.options.symlink, compilation.compilation.outputPath, clear)
     }
 
-    if (this.options.after.length) {
+    if (this.options.after && this.options.after.length) {
       for (let i in this.options.after) {
         this.handleScript(this.options.after[i])
       }
@@ -167,7 +192,7 @@ class FolderUploadWebpackPlugin {
 
   }
 
-  createSimlinks(options, inputPath, clear) {
+  createSimlinks(options: { path: string, force: boolean }, inputPath: string, clear: boolean|undefined) {
     if (options.force || fs.existsSync(inputPath)) {
       const baseDir = process.cwd();
       process.chdir(inputPath);
@@ -201,7 +226,7 @@ class FolderUploadWebpackPlugin {
     }
   }
 
-  log(text, formatter = chalk) {
+  log(text: string, formatter:Chalk = chalk.blue) {
     if (!this.options.logging) {
       return;
     }
@@ -209,7 +234,7 @@ class FolderUploadWebpackPlugin {
   }
 }
 
-function formatRemotePath(remotePath, filePath = '') {
+function formatRemotePath(remotePath: string, filePath = '') {
   return (remotePath + '/' + filePath).replace(/\\/g, '/').replace(/\.\//g, "").replace(/\/\/+/g, "/");
 }
 

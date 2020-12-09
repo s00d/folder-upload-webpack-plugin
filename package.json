@@ -1,10 +1,14 @@
 {
   "name": "folder-upload-webpack-plugin",
-  "version": "2.3.8",
+  "version": "2.4.0",
   "description": "Upload your folder to ssh sftp server after build, add support to 'webpack --watch'",
-  "main": "index.js",
-  "types": "index.d.ts",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
   "scripts": {
+    "clean": "rimraf lib && rimraf dist",
+    "prepublish": "npm run clean && npm run build",
+    "prepare": "npm run build",
+    "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -36,9 +40,14 @@
     "ssh2-sftp-client": "^5.3.2"
   },
   "devDependencies": {
+    "@types/fs-extra": "^9.0.4",
+    "@types/node": "^14.14.11",
+    "@types/readline-sync": "^1.4.3",
+    "@types/webpack": "^4.41.25",
+    "rimraf": "^3.0.2",
     "webpack": "^4.44.2"
   },
   "peerDependencies": {
-    "webpack": ">=1.0.0"
+    "webpack": ">=4.0.0"
   }
 }
