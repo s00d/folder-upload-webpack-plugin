@@ -15,7 +15,7 @@ function isArray(a: any) {
   return (!!a) && (a.constructor === Array);
 }
 
-interface Options {
+export interface Options {
   confirmation?: boolean,
   server: Array<{host: string, port: string|number, username: string|number, password: string|number}>,
   paths?: () => {[key: string]: string},
@@ -33,7 +33,7 @@ interface Options {
   ssh?: any
 }
 
-class FolderUploadWebpackPlugin {
+export default class FolderUploadWebpackPlugin {
   private pathList: any[];
   private cl: {[key: string]: boolean };
   private options: Options;
@@ -237,5 +237,3 @@ class FolderUploadWebpackPlugin {
 function formatRemotePath(remotePath: string, filePath = '') {
   return (remotePath + '/' + filePath).replace(/\\/g, '/').replace(/\.\//g, "").replace(/\/\/+/g, "/");
 }
-
-module.exports = FolderUploadWebpackPlugin;
