@@ -177,7 +177,7 @@ class FolderUploadWebpackPlugin {
 
     if (this.options.symlink) {
       this.log('Making symlink...', chalk.green);
-      this.createSimlinks(this.options.symlink, compilation.compilation.outputPath, clear)
+      this.createSimlinks(this.options.symlink, compilation.compilation.compiler.outputPath, clear)
     }
 
     if (this.options.after && this.options.after.length) {
