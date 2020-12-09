@@ -1,4 +1,4 @@
-const slog = require('single-line-log').stdout;
+import {stdout as slog} from "single-line-log";
 
 module.exports = function ProgressBar(description, bar_length) {
     this.description = description || 'Progress';

@@ -7,9 +7,10 @@
     "noImplicitReturns": true,
     "noImplicitThis": true,
     "strictNullChecks": true,
+    "allowJs": true,
     "target": "es5"
   },
-  "files": [
-    "src/index.ts"
+  "include": [
+    "src/**/*.ts","src/**/*.js"
   ]
 }
