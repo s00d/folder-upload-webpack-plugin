@@ -1,15 +1,15 @@
-const archiver = require('archiver');
-const chalk = require('chalk');
-const fs = require('fs-extra');
-const path = require('path');
-const ProgressBar = require('./ProgressBar');
+import archiver from "archiver";
+import chalk, {Chalk} from "chalk";
+import fs from "fs-extra";
+import path from "path";
 
-module.exports = class Compressor {
+export default class Compressor {
+    private logging: boolean;
     constructor(log = false) {
         this.logging = log;
     }
 
-    compress(from, to, compress) {
+    compress(from: string, to: string, compress: number) {
         const output = fs.createWriteStream(path.resolve(to));
         const arch = archiver('zip', {
             zlib: { level: compress } // Sets the compression level.
@@ -32,7 +32,7 @@ module.exports = class Compressor {
         });
     }
 
-    log(text, formatter = chalk) {
+    log(text: string, formatter:Chalk = chalk) {
         if(!this.logging) {
             return;
         }

@@ -1,13 +1,9 @@
 import * as webpack from 'webpack';
 import { Chalk } from "chalk";
+import { ConnectConfig } from "ssh2";
 export interface Options {
     confirmation?: boolean;
-    server: Array<{
-        host: string;
-        port: string | number;
-        username: string | number;
-        password: string | number;
-    }>;
+    server: Array<ConnectConfig>;
     paths?: () => {
         [key: string]: string;
     };
@@ -28,10 +24,11 @@ export interface Options {
     ssh?: any;
 }
 export default class FolderUploadWebpackPlugin {
-    private pathList;
-    private cl;
-    private options;
-    private paths;
+    private readonly pathList;
+    private readonly cl;
+    private readonly options;
+    private readonly paths;
+    private ssh;
     constructor(options?: Options);
     apply(compiler: webpack.Compiler): void;
     pathConverter(local: string, remote: string, size?: number): {

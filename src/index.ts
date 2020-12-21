@@ -1,23 +1,16 @@
-import {execSync, spawnSync} from "child_process";
-const SshClient = require('./utils/ssh');
+import {spawnSync} from "child_process";
 import * as webpack from 'webpack'
-import * as os from "os";
 import * as path from "path";
 import * as fs from "fs-extra";
 import chalk from "chalk";
 import readline from "readline-sync";
 import {Chalk} from "chalk";
-
-function isObject(a: any) {
-  return (!!a) && (a.constructor === Object);
-}
-function isArray(a: any) {
-  return (!!a) && (a.constructor === Array);
-}
+import SshClient from "./utils/ssh";
+import {ConnectConfig} from "ssh2";
 
 export interface Options {
   confirmation?: boolean,
-  server: Array<{host: string, port: string|number, username: string|number, password: string|number}>,
+  server: Array<ConnectConfig>,
   paths?: () => {[key: string]: string},
   clear?: boolean,
   enable?: boolean,
@@ -34,10 +27,11 @@ export interface Options {
 }
 
 export default class FolderUploadWebpackPlugin {
-  private pathList: any[];
-  private cl: {[key: string]: boolean };
-  private options: Options;
-  private paths: {[key: string]: string};
+  private readonly pathList: any[];
+  private readonly cl: {[key: string]: boolean };
+  private readonly options: Options;
+  private readonly paths: {[key: string]: string};
+  private ssh: SshClient;
 
 
   constructor(options: Options = {server: []}) {
@@ -54,7 +48,7 @@ export default class FolderUploadWebpackPlugin {
     options.chmod = !options.chmod ? 0o644 : options.chmod;
     options.archive = options.archive ? options.archive : 'FolderUploadWebpackPlugin.zip';
     options.ignore = options.ignore ? options.ignore : null;
-    options.ssh = options.ssh ? new options.ssh(options.logging, options.progress) : new SshClient(options.logging, options.progress);
+    this.ssh = new SshClient(options.logging, options.progress);
     options.confirmation = options.confirmation ? options.confirmation : false;
     this.paths = options.paths ? options.paths() : {};
     options.after = options.after ? options.after : [];
@@ -70,11 +64,7 @@ export default class FolderUploadWebpackPlugin {
 
   apply(compiler: webpack.Compiler) {
     if(!this.options.enable) return;
-    if (compiler.hooks) {
-      compiler.hooks.done.tapAsync('folder-upload-webpack-plugin', this.upload);
-    } else {
-      compiler.plugin('folder-upload-webpack-plugin', this.upload);
-    }
+    compiler.hooks.done.tapAsync('folder-upload-webpack-plugin', this.upload);
   }
 
   pathConverter(local: string, remote: string, size = 0) {
@@ -118,16 +108,12 @@ export default class FolderUploadWebpackPlugin {
   }
 
   handleScript(script: string) {
-    if (os.platform() === 'win32') {
-      const buffer = execSync(script, {stdio: 'inherit'});
-    } else {
-      const [command, ...args] = script.split(' ');
-      spawnSync(command, args, {stdio: 'inherit'});
-    }
+    const [command, ...args] = script.split(' ');
+    spawnSync(command, args, {stdio: 'inherit'});
   }
 
   async upload(compilation: webpack.Stats, callback?: Function) {
-    const {clear, ssh, chmod, server} = this.options;
+    const {clear, chmod, server} = this.options;
 
     if (this.options.before && this.options.before.length) {
       for (let i in this.options.before) {
@@ -140,14 +126,14 @@ export default class FolderUploadWebpackPlugin {
         for (let i in server) {
           let [filesList, cl] = await this.walk(this.paths);
 
-          server[i].port = server[i].port || '22';
-          await ssh.connect(server[i]);
+          server[i].port = server[i].port || 22;
+          await this.ssh.connect(server[i]);
 
           for (let i in this.paths) {
             if (clear) {
               try {
                 this.log('Clearing remote folder ' + this.paths[i] + '* ...', chalk.red);
-                await ssh.exec('rm -rf ' + formatRemotePath(this.paths[i]) + '*');
+                await this.ssh.rmdir('rm -rf ' + formatRemotePath(this.paths[i]) + '*');
               } catch (e) {
               }
             }
@@ -156,19 +142,19 @@ export default class FolderUploadWebpackPlugin {
           for (let i in cl) {
             let dir = formatRemotePath(cl[i]);
             try {
-              if (!await ssh.exists(dir)) {
+              if (!await this.ssh.exists(dir)) {
                 this.log('MAKE remote folder ' + dir + ' ...', chalk.green);
-                await ssh.mkdir(dir, true).catch(() => null);
-                await ssh.chmod(dir, chmod).catch(() => null);
+                await this.ssh.mkdir(dir, true).catch(() => null);
+                await this.ssh.chmod(dir, chmod).catch(() => null);
               }
             } catch (e) {
             }
           }
 
           this.log('Uploading...', chalk.green);
-          await ssh.sendFile(filesList);
+          await this.ssh.sendFile(filesList);
           this.log('end', chalk.green);
-          await ssh.end();
+          await this.ssh.end();
         }
       }
     }
