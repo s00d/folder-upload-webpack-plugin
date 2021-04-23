@@ -22,6 +22,7 @@ export interface Options {
     before?: Array<any>;
     after?: Array<any>;
     ssh?: any;
+    streams?: number;
 }
 export default class FolderUploadWebpackPlugin {
     private readonly pathList;
@@ -42,7 +43,7 @@ export default class FolderUploadWebpackPlugin {
         [key: string]: string;
     }): any[][];
     handleScript(script: string): void;
-    upload(compilation: webpack.Stats, callback?: Function): Promise<void>;
+    upload(compilation: webpack.Stats): Promise<void>;
     createSimlinks(options: {
         path: string;
         force: boolean;

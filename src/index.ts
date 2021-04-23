@@ -24,6 +24,7 @@ export interface Options {
   before?: Array<any>
   after?: Array<any>
   ssh?: any
+  streams?: number
 }
 
 export default class FolderUploadWebpackPlugin {
@@ -48,7 +49,7 @@ export default class FolderUploadWebpackPlugin {
     options.chmod = !options.chmod ? 0o644 : options.chmod;
     options.archive = options.archive ? options.archive : 'FolderUploadWebpackPlugin.zip';
     options.ignore = options.ignore ? options.ignore : null;
-    this.ssh = new SshClient(options.logging, options.progress);
+    this.ssh = new SshClient(options.logging, options.progress, options.streams);
     options.confirmation = options.confirmation ? options.confirmation : false;
     this.paths = options.paths ? options.paths() : {};
     options.after = options.after ? options.after : [];
@@ -64,7 +65,7 @@ export default class FolderUploadWebpackPlugin {
 
   apply(compiler: webpack.Compiler) {
     if(!this.options.enable) return;
-    compiler.hooks.done.tapAsync('folder-upload-webpack-plugin', this.upload);
+    compiler.hooks.afterDone.tap('folder-upload-webpack-plugin', this.upload);
   }
 
   pathConverter(local: string, remote: string, size = 0) {
@@ -112,7 +113,7 @@ export default class FolderUploadWebpackPlugin {
     spawnSync(command, args, {stdio: 'inherit'});
   }
 
-  async upload(compilation: webpack.Stats, callback?: Function) {
+  async upload(compilation: webpack.Stats) {
     const {clear, chmod, server} = this.options;
 
     if (this.options.before && this.options.before.length) {
@@ -171,11 +172,6 @@ export default class FolderUploadWebpackPlugin {
         this.handleScript(this.options.after[i])
       }
     }
-
-    if (callback) {
-      callback();
-    }
-
   }
 
   createSimlinks(options: { path: string, force: boolean }, inputPath: string, clear: boolean|undefined) {
