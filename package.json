@@ -35,7 +35,7 @@
     "fs-extra": "^9.1.0",
     "readline-sync": "^1.4.10",
     "single-line-log": "^1.1.2",
-    "ssh2": "^0.8.9",
+    "ssh2": "^1.4.0",
     "ssh2-sftp-client": "^6.0.1",
     "webpack-progress-ora-plugin": "^1.5.10"
   },
